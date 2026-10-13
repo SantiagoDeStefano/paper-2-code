@@ -1,5 +1,4 @@
 from typing import Any
-
 import torch
 import torch.nn as nn
 
@@ -15,13 +14,13 @@ maps in S2 have half the number of rows and column as
 feature maps in C1. Layer S2 has 12 trainable parameters 
 (6 coefficient and 6 bias for each features map = 6)
 and 2x2 (2x2 kernel) = 4 + 1 (bias) = 5 * (14 * 14) (output after kernel)
-980 * 6 (features map) = 5,880 connections.
+= 980 * 6 (features map) = 5,880 connections.
 """
 class layer_s2(nn.Module):
     def __init__(self):
         super().__init__()
         self.coeff = nn.Parameter(torch.ones(6))
-        self.bias = nn.Parameter(torch.ones(6))
+        self.bias = nn.Parameter(torch.zeros(6))
     def forward(self, x):
         x = torch.nn.AvgPool2d(kernel_size=2, divisor_override=1)(x)
         x = x * self.coeff.view(1, 6, 1, 1)
@@ -96,6 +95,27 @@ class layer_c3(nn.Module):
 
         x = torch.cat(outs, dim=1)
         return torch.sigmoid(x)
+
+"""
+Layer S4 is a sub-sampling layer with 16 feature maps of
+size 5x5. Each unit in each feature map is connected to a
+2x2 neighborhood in the corresponding feature map in C3,
+in a similar way as C1 and S2. Layer S4 has
+16 (features map) * ( 1 (coeff) + 1 (bias) ) = 32 trainable
+parameters and 16 (features map) * 5 * 5 = 400
+* ( 2 * 2 (kernel) + 1 (bias) ) = 2,000 connections.
+"""
+class layer_s4(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.coeff = nn.Parameter(torch.ones(16))
+        self.bias = nn.Parameter(torch.zeros(16))
+    def forward(self, x):
+        x = torch.nn.AvgPool2d(kernel_size=2, divisor_override=1)(x)
+        x = x * self.coeff.view(1, 16, 1, 1)
+        x = x + self.bias.view(1, 16, 1, 1)
+        return torch.sigmoid(x)
+
 class LeNet5(nn.Module):
     def __init__(self):
         super().__init__()
@@ -121,11 +141,11 @@ class LeNet5(nn.Module):
         neighborhoods at identical locations in a subset of S2's
         feature maps. 
         """
-        self.layer_3 = nn.Sequential(
-            nn.Linear(32, 32)
+        self.layer_c3 = nn.Sequential(
+            layer_c3()
         )
-        self.layer_4 = nn.Sequential(
-            nn.Linear(32, 32)
+        self.layer_s4 = nn.Sequential(
+
         )
         self.layer_5 = nn.Sequential(
             nn.Linear(32, 32)
@@ -139,8 +159,8 @@ class LeNet5(nn.Module):
 
 
 if __name__ == "__main__":
-    # S2 check
-    s2 = layer_s2()                                   # note the (): makes an instance
-    out = s2(torch.randn(1, 6, 28, 28))
-    print(out.shape)                                  # (1, 6, 14, 14)
-    print(sum(p.numel() for p in s2.parameters()))    # 0 for now, target is 12
+    x_first = torch.rand(1, 3, 10, 10)
+    x_second = nn.AvgPool2d(kernel_size=2, divisor_override=1)(x_first)
+
+    print(x_first.shape)
+    print(x_second.shape)
