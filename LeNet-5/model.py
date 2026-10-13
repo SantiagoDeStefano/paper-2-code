@@ -12,8 +12,10 @@ by a trainable coeffient, and added to a trainable bias.
 The result is passed through a sigmoidal function. The
 2x2 receptive fields are non-overlapping, therefore feature
 maps in S2 have half the number of rows and column as
-feature maps in C1. Layer S2 has 12 trainable parameters
-and 5,880 connections.
+feature maps in C1. Layer S2 has 12 trainable parameters 
+(6 coefficient and 6 bias for each features map = 6)
+and 2x2 (2x2 kernel) = 4 + 1 (bias) = 5 * (14 * 14) (output after kernel)
+980 * 6 (features map) = 5,880 connections.
 """
 class layer_s2(nn.Module):
     def __init__(self):
@@ -26,6 +28,74 @@ class layer_s2(nn.Module):
         x = x + self.bias.view(1, 6, 1, 1)
         return torch.sigmoid(x)
 
+
+"""
+Layer C3 is a convolutional layer with 16 feature maps.
+Each unit in each feature map is connected to several 5x5
+neighborhoods at identical locations in a subset of S2's
+feature maps. Table I shows the set of S2 feature maps
+combined by each C3 feature map. Why not connect every S2 feature 
+map to every C3 feature map? The reason is twofold. First, 
+a non-complete connection scheme keeps the number of connections
+within reasonable bounds. More importantly, it forces a break
+of symmetry in the network. Different feature maps are forced
+to extract different (hopefully complementary) features because
+they get different sets of inputs. The rationale behind the 
+connection scheme in table I is the following. The first six 
+C3 feature maps take inputs from every contiguous subsets 
+of three feature maps in S2. The next six take input from 
+every contiguous subset of four. The next three take input 
+from some discontinuous subsets of four. Finally the last 
+one takes input from all S2 feature maps. Layer C3 has 
+
+5 * 5 (kernel) = 25 * 3 (3 inputs at a time from layer S2)
+= 75 + 1 (bias) = 76 * 6 (six 3 inputs of layer S2) = 456
+
+5 * 5 (kernel) = 25 * 4 (4 inputs at a time from layer S2)
+= 100 + 1 (bias) = 101 * 9 (nine 4 inputs of layer S2) = 909
+
+5 * 5 (kernel) = 25 * 6 (6 inputs at a time from layer S2)
+= 150 + 1 (bias) = 151 * 1 (one 6 inputs of layer S2) = 151
+
+456 + 909 + 151 = 1,516 trainable parameters and 
+
+
+C3 output size: 
+H_out = floor( (H_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1 )
+      = floor( (14   + 2 * 0       - 1        * (5           - 1) - 1) / 1      + 1 )
+      = floor(10)
+      = 10
+10 * 10 = 100 (units) * 1516 (params) = 151,600 connections.
+"""
+class layer_c3(nn.Module):
+    """
+    Table 1. Each column indicates which feature map 
+    in S2 are combined by the units in a particular 
+    feature map of C3 
+    """
+    TABLE = [
+        [0, 1, 2], [1, 2, 3], [2, 3, 4], [3, 4, 5], [0, 4, 5], [0, 1, 5],
+        [0, 1, 2, 3], [1, 2, 3, 4], [2, 3, 4, 5], [0, 3, 4, 5], [0, 1, 4, 5], [0, 1, 2, 5],
+        [0, 1, 3, 4], [1, 2, 4, 5], [0, 2, 3, 5],
+        [0, 1, 2, 3, 4, 5],
+    ]
+    def __init__(self):
+        super().__init__()
+        self.convs = nn.ModuleList()
+        for subset in self.TABLE:
+            num_inputs = len(subset)
+            conv = nn.Conv2d(in_channels=num_inputs, out_channels=1, kernel_size=5)
+            self.convs.append(conv)
+
+    def forward(self, x):
+        outs = []
+        for conv, subset in zip(self.convs, self.TABLE):
+            picked = x[:, subset]
+            out = conv(picked)
+            outs.append(out)
+
+        x = torch.cat(outs, dim=1)
+        return torch.sigmoid(x)
 class LeNet5(nn.Module):
     def __init__(self):
         super().__init__()
@@ -45,6 +115,12 @@ class LeNet5(nn.Module):
             layer_s2()
         )
 
+        """
+        Layer C3 is a convolutional layer with 16 feature maps.
+        Each unit in each feature map is connected to several 5x5
+        neighborhoods at identical locations in a subset of S2's
+        feature maps. 
+        """
         self.layer_3 = nn.Sequential(
             nn.Linear(32, 32)
         )
