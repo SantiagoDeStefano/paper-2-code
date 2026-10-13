@@ -18,9 +18,13 @@ and 5,880 connections.
 class layer_s2(nn.Module):
     def __init__(self):
         super().__init__()
+        self.coeff = nn.Parameter(torch.ones(6))
+        self.bias = nn.Parameter(torch.ones(6))
     def forward(self, x):
-        x = x.
-
+        x = torch.nn.AvgPool2d(kernel_size=2, divisor_override=1)(x)
+        x = x * self.coeff.view(1, 6, 1, 1)
+        x = x + self.bias.view(1, 6, 1, 1)
+        return torch.sigmoid(x)
 
 class LeNet5(nn.Module):
     def __init__(self):
@@ -38,8 +42,7 @@ class LeNet5(nn.Module):
 
 
         self.layer_s2 = nn.Sequential(
-            nn.Conv2d(in_channels=6, out_channels=6, kernel_size=2, stride=2),
-            nn.Sigmoid()
+            layer_s2()
         )
 
         self.layer_3 = nn.Sequential(
@@ -57,3 +60,11 @@ class LeNet5(nn.Module):
         self.layer_7 = nn.Sequential(
             nn.Linear(32, 32)
         )
+
+
+if __name__ == "__main__":
+    # S2 check
+    s2 = layer_s2()                                   # note the (): makes an instance
+    out = s2(torch.randn(1, 6, 28, 28))
+    print(out.shape)                                  # (1, 6, 14, 14)
+    print(sum(p.numel() for p in s2.parameters()))    # 0 for now, target is 12
