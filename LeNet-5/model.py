@@ -128,39 +128,65 @@ class LeNet5(nn.Module):
         C1 contains 5 x 5 (kernel size) = 25 + 1 (bias) = 26 * 6 (6 feature maps) = 156 trainable parameters, and
         5x5 = 25 (inputs) + 1 (bias) = 26 x 6 x 28 x 28 (6 maps, each is 28x28) = 122,304 connections.
         """
-        self.c1 = nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5)
-
+        self.layer_c1 = nn.Sequential(
+            nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5), 
+            nn.Sigmoid()
+        )
 
         self.layer_s2 = nn.Sequential(
             layer_s2()
         )
-
-        """
-        Layer C3 is a convolutional layer with 16 feature maps.
-        Each unit in each feature map is connected to several 5x5
-        neighborhoods at identical locations in a subset of S2's
-        feature maps. 
-        """
         self.layer_c3 = nn.Sequential(
             layer_c3()
         )
         self.layer_s4 = nn.Sequential(
-
-        )
-        self.layer_5 = nn.Sequential(
-            nn.Linear(32, 32)
-        )
-        self.layer_6 = nn.Sequential(
-            nn.Linear(32, 32)
-        )
-        self.layer_7 = nn.Sequential(
-            nn.Linear(32, 32)
+            layer_s4()
         )
 
+        """
+        Layer C5 is a convolutional layer with 120 feature maps.
+        Each unit is connected to a 5x5 neighborhood on all 16
+        of S4's feature maps. Here, because the size of S4 is also
+        5x5, the size of C5's feature maps is 1x1: this amounts
+        to a full connection between S4 and C5. C5 is labeled
+        as a convolutional layer, instead of a fully-connected layer,
+        because if LeNet-5 input were made bigger with everything
+        else kept constant, the feature map dimension would be
+        larger than 1x1. This process of dynamically increasing the
+        size of a convolutional network is described in the section
+        Section VII. Layer C5 has 16 (features map of S4) * 5 * 5 (kernel size)
+        = 400 + 1 (bias) = 401 * 120 = 48,120 trainable connections.
+        """
+        self.layer_c5 = nn.Sequential(
+            nn.Conv2d(in_channels=16, out_channels=120, kernel_size=5),
+            nn.Sigmoid()
+        )
+        
+        """
+        Layer F6, contains 84 units (the reason for this number
+        comes from the design of the output layer, explained below) 
+        and is fully connected to C5. It has 84 * (120 + 1) = 10,164 trainable parameters.
+        """
+        self.layer_f6 = nn.Sequential(
+            nn.Linear(120, 84),
+            nn.Sigmoid()
+        )
+
+        self.out = nn.Linear(84, 10)
+    
+    def forward(self, x):
+        x = self.layer_c1(x)
+        x = self.layer_s2(x)
+        x = self.layer_c3(x)
+        x = self.layer_s4(x)
+        x = self.layer_c5(x)
+        x = x.view(x.size(0), -1)
+        x = self.layer_f6(x)
+        x = self.out(x)
+        return x
 
 if __name__ == "__main__":
-    x_first = torch.rand(1, 3, 10, 10)
-    x_second = nn.AvgPool2d(kernel_size=2, divisor_override=1)(x_first)
-
-    print(x_first.shape)
-    print(x_second.shape)
+    model = LeNet5()
+    out = model(torch.randn(1, 1, 32, 32))
+    print(out.shape)
+    print(sum(p.numel() for p in model.parameters()))
