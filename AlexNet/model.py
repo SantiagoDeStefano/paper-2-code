@@ -97,7 +97,8 @@ class AlexNet(nn.Module):
             nn.ReLU()
         )
 
-        self.layer_8 = nn.Linear(4096, 1000)
+        # Original paper it is 1000 but for imagenette2 dataset, it is 10
+        self.layer_8 = nn.Linear(4096, 10)
 
     def forward(self, x):
         x = self.layer_1(x)
@@ -108,7 +109,7 @@ class AlexNet(nn.Module):
         # Conv output is (batch, 256, 6, 6)
         # Linear needs (batch, features)
         # In which flattens everything from dim 1 onward -> 256, 6, 6 -> 256x6x6
-        torch.flatten(x, 1)
+        x = torch.flatten(x, 1)
         x = self.layer_6(x)
         x = self.layer_7(x)
         x = self.layer_8(x)
