@@ -78,3 +78,38 @@ class AlexNet(nn.Module):
             # (13 - 3)/2 + 1 = 6x6x256
             nn.MaxPool2d(kernel_size=3, stride=2)
         )
+
+        """
+        The remaining three are fully-connected. 
+        The output of the last fully-connected layer 
+        is fed to a 1000-way softmax which produces
+        a distribution over the 1000 class labels
+        """
+        self.layer_6 = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(6*6*256, 4096),
+            nn.ReLU()
+        )
+
+        self.layer_7 = nn.Sequential(
+            nn.Dropout(0.5),
+            nn.Linear(4096, 4096),
+            nn.ReLU()
+        )
+
+        self.layer_8 = nn.Linear(4096, 1000)
+
+    def forward(self, x):
+        x = self.layer_1(x)
+        x = self.layer_2(x)
+        x = self.layer_3(x)
+        x = self.layer_4(x)
+        x = self.layer_5(x)
+        # Conv output is (batch, 256, 6, 6)
+        # Linear needs (batch, features)
+        # In which flattens everything from dim 1 onward -> 256, 6, 6 -> 256x6x6
+        torch.flatten(x, 1)
+        x = self.layer_6(x)
+        x = self.layer_7(x)
+        x = self.layer_8(x)
+        return x
