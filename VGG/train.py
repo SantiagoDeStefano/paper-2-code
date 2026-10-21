@@ -5,7 +5,7 @@ from dataset import train_loader, val_loader
 from model import VGG_D
 
 def main():
-    num_epoches = 90
+    num_epoches = 1
     device = 'cpu'
 
     model = VGG_D().to(device)
@@ -58,6 +58,7 @@ def main():
     scheduler.step(val_loss)
 
     print(f"epoch {epoch}: train_loss {train_loss:.3f}, val_loss {val_loss:.3f}, val_acc {val_acc:.3f}")
+    torch.save(model.state_dict(), "VGG/vgg_d.pth")
 
 
 if __name__ == "__main__":
