@@ -10,6 +10,7 @@ then lr_after = lr/10 after validation stopped improving
 
 randomly cropped and  rescaled; one crop per image per SGD iteration
 """
+import torch
 import torch.nn as nn
 
 class VGG_D(nn.Module):
@@ -142,3 +143,16 @@ class VGG_D(nn.Module):
             # We use nn.CrossEntropyLoss; in which expects raw logits
             # Apply softmax only during inference
         )
+
+    def forward(self, x):
+        x = self.layer_1(x)
+        x = self.layer_2(x)
+        x = self.layer_3(x)
+        x = self.layer_4(x)
+        x = self.layer_5(x)
+        # As nn.Conv2d returns (Batch, C_out, H_out, W_out)
+        # But FC (Linear) expects (Batch, ...)
+        # So we need torch.flatten(x, 1) to make it became (Batch, C_in*H_out*W_out)
+        x = torch.flatten(x, 1)
+        x = self.layer_classifier(x)
+        return x
