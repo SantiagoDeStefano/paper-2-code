@@ -145,3 +145,13 @@ class VGG_D(nn.Module):
         x = torch.flatten(x, 1)
         x = self.layer_classifier(x)
         return x
+
+# Lame ahh model because the full model make my laptop became a smoke bomb
+class VGG_D_LameAhh(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.layer = nn.Linear(224*224*3, 10)
+    def forward(self, x):
+        x = torch.flatten(x, 1)
+        x = self.layer(x)
+        return x

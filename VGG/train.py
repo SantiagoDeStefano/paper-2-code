@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from dataset import train_loader, val_loader
-from model import VGG_D
+from model import VGG_D_LameAhh
 
 def main():
-    num_epoches = 1
+    num_epoches = 10
     device = 'cpu'
 
-    model = VGG_D().to(device)
+    model = VGG_D_LameAhh().to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(
         model.parameters(),
@@ -40,25 +40,40 @@ def main():
 
         train_loss /= len(train_loader.dataset)
 
-    # validation
-    model.eval()
-    val_loss = 0
-    correct = 0
-    with torch.no_grad():
-        for images, labels in val_loader:
-            images, labels = images.to(device), labels.to(device)
-            outputs = model(images)
-            val_loss += criterion(outputs, labels).item() * images.size(0)
-            correct += (outputs.argmax(1) == labels).sum().item()
+        # evaluation
+        """
+        print(images.shape)
+        print(labels.shape)
+        print(labels)
+        
+        (256, 3, 224, 224)
+        (256)
+        [7, 4, 2, 4, ....]
+        """
+        correct = 0.0
+        val_loss = -1.0
+        best_acc = 0.0
+        model.eval()
+        with torch.no_grad():
+            for images, labels in train_loader:
+                outputs_logits = model(images)
+                # outputs_logits: .shape = ([256, 10])
+                # torch.argmax(outputs_logits): printed an index for a whole batch, e.g. 2531; .shape = ([])
+                # as it is one scalar
+                # torch.argmax(outputs_logits, dim=1): tensor of shape (256,) printed [1, 3, 4, 5, ...] (256 numbers)
+                y_pred = (torch.argmax(outputs_logits, dim=1) == labels)
+                # .sum() counts the True; .item() turns tensor to plain python number
+                correct += y_pred.sum().item() 
+        val_loss /= len(val_loader.dataset)
+        val_acc = correct/len(val_loader.dataset)
 
-    val_loss /= len(val_loader.dataset)
-    val_acc = correct / len(val_loader.dataset)
+        if(val_acc > best_acc):
+            best_acc = val_acc
+            torch.save(model.state_dict(), "VGG/VGG_D_LameAhh.pt")
 
-     # lr /10 if val_loss stops improving
-    scheduler.step(val_loss)
+        scheduler.step(val_loss)
 
-    print(f"epoch {epoch}: train_loss {train_loss:.3f}, val_loss {val_loss:.3f}, val_acc {val_acc:.3f}")
-    torch.save(model.state_dict(), "VGG/vgg_d.pth")
+        print(f"epoch {epoch+1}/{num_epoches} | train_loss {train_loss:.3f} | val_loss {val_loss:.3f} | val_acc {val_acc:.3f}")
 
 
 if __name__ == "__main__":
