@@ -1,15 +1,3 @@
-"""
-3x3 kernel filters in all layers
-each layers have maxpool of kernel = 2 and stride = 2
-GD with momentum,
-batch size = 256
-L2 - 5e-4
-dropout for first 2 FC = 0.5
-lr = e-2
-then lr_after = lr/10 after validation stopped improving
-
-randomly cropped and  rescaled; one crop per image per SGD iteration
-"""
 import torch
 import torch.nn as nn
 
@@ -139,7 +127,8 @@ class VGG_D(nn.Module):
             nn.Linear(4096, 4096),
             nn.ReLU(),
             nn.Dropout(0.5),
-            nn.Linear(4096, 1000)
+            # It should be 1000 but for imagenette2 it's only 10
+            nn.Linear(4096, 10)
             # We use nn.CrossEntropyLoss; in which expects raw logits
             # Apply softmax only during inference
         )
