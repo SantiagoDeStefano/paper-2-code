@@ -21,7 +21,7 @@ train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True, num_worke
 val_loader = DataLoader(val_dataset, batch_size=256, shuffle=False, num_workers=4)
 
 def main():
-    print(len(val_loader.dataset))
+    print(val_loader.dataset.images)
 
 if __name__ == '__main__':
     main()
