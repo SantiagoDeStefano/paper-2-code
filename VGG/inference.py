@@ -38,7 +38,7 @@ def main():
     recall = true_positive/(true_positive + false_negative).clamp(min=1)
     f1 = 2 * ((precision * recall) / (precision + recall).clamp(min=1e-12))
 
-    torch.save({"probs": all_probs, "labels": all_labels}, "val_probs.pt")
+    torch.save({"probs": all_probs, "labels": all_labels}, "VGG/val_probs.pt")
 
     print("Precision:", precision.mean().item())
     print("Recall:", recall.mean().item())
