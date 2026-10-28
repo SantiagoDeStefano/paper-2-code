@@ -54,7 +54,7 @@ def main():
 
         if(val_acc > best_acc):
             best_acc = val_acc
-            torch.save(model.state_dict(), "ResNet/ResNet_LameAhh.pt")
+            torch.save(model.state_dict(), "ResNet-18/ResNet_LameAhh.pt")
         
         scheduler.step(val_acc)
         print(f"epoch {epoch + 1}/{epoches} | train_loss: {train_loss:.3f} | val_acc: {val_acc:.3f}")
