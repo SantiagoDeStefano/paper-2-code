@@ -1,24 +1,6 @@
-"""
-Resized with its shorter side randomly sampled in [256, 480];
-
-224x224 crop is randomly sampled from an image or its horizontal flip
-with the per-pixel mean being subtracted;
-
-Standard color augmentation;
-
-Batch normalization right after right after each 
-convolution and before activation;
-
-SGD with a mini-batch size of 256:
-- lr: 0.1
-- lr * 0.1 step
-- trained for 60 * e4
-- weight decay: 1e-4
-- momentum: 0.9
-"""
 import torch.nn as nn
 
-class ResNet(nn.Module):
+class ResNet_18(nn.Module):
     def __init__(self):
         super().__init__()
         self.conv1 = nn.Sequential(
@@ -114,7 +96,7 @@ class ResNet(nn.Module):
             # (Batch, 1, 1, 512) so we should add torch.flatten()
             nn.AdaptiveAvgPool2d(output_size=1),
             nn.Flatten(),
-            nn.Linear(1*1*512, 1000)
+            nn.Linear(1*1*512, 10)
         )
     def forward(self, x):
         x = self.conv1(x)
@@ -158,5 +140,18 @@ class ResNet(nn.Module):
         x = self.conv5_x[5](self.conv5_x[0:5](x) + self.shortcut5(x))
         x = self.conv5_x[11](self.conv5_x[6:11](x) + x)
 
+        x = self.classification(x)
+        return x
+
+class ResNet_LameAhh(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.classification = nn.Sequential(
+            # (B,3,224,224) -> (B,3,1,1)
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+            nn.Linear(3, 10)
+        )
+    def forward(self, x):
         x = self.classification(x)
         return x
